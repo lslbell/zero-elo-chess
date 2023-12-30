@@ -1,7 +1,7 @@
 import React from 'react';
 import { hot } from 'react-hot-loader';
 import { Navbar } from './components/navbar/navbar';
-import { AlphaZero } from './components/alphazero/alphazero';
+import { AlphaZero } from './components/alpha-zero/alpha-zero';
 
 const App = () => {
     return (

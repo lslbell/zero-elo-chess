@@ -1,7 +1,5 @@
 export const STARTING_POSITION = "rnbqkbnr/pppppppp/11111111/11111111/11111111/11111111/PPPPPPPP/RNBQKBNR";
 
-export const gameMoves = '1. d4 e6 2. e4 d5 3. Nc3 Nf6 4. e5 Nfd7 5. f4 c5 6. Nf3 cxd4 7. Nb5 Bb4 + 8. Bd2 Bc5 9. b4 Be7 10. Nbxd4 Nc6 11. c3 a5 12. b5 Nxd4 13. cxd4 Nb6 14. a4 Nc4 15. Bd3 Nxd2 16. Kxd2 Bd7 17. Ke3 b6 18. g4 h5 19. Qg1 hxg4 20. Qxg4 Bf8 21. h4 Qe7 22. Rhc1 g6 23. Rc2 Kd8 24. Rac1 Qe8 25. Rc7 Rc8 26. Rxc8+ Bxc8 27. Rc6 Bb7 28. Rc2 Kd7 29. Ng5 Be7 30. Bxg6 Bxg5 31. Qxg5 fxg6 32. f5 Rg8 33. Qh6 Qf7 34. f6 Kd8 35. Kd2 Kd7 36. Rc1 Kd8 37. Qe3 Qf8 38. Qc3 Qb4 39. Qxb4 axb4 40. Rg1 b3 41. Kc3 Bc8 42. Kxb3 Bd7 43. Kb4 Be8 44. Ra1 Kc7 45. a5 Bd7 46. axb6 + Kxb6 47. Ra6+ Kb7 48. Kc5 Rd8 49. Ra2 Rc8+ 50. Kd6 Be8 51. Ke7 g5 52. hxg5'
-
 export const convertPgnToMoveArray = (pgn: string) => {
     const moves = pgn.split(/\d+\.\s/);
     const eachMove = [];
@@ -9,59 +7,62 @@ export const convertPgnToMoveArray = (pgn: string) => {
         let x = moves[i].split(" ")
         let firstMove = x[0]
         let secondMove = x.slice(1).join("")
-        if (firstMove && secondMove) {
-            if(firstMove !== "+") {
+            if (firstMove && firstMove !== "+") {
                 eachMove.push(firstMove)
             }
-            if(secondMove !== "+") {
+            if (secondMove && secondMove !== "+") {
                 eachMove.push(secondMove)
             }
-        }
     }
     return eachMove;
 }
 
-
-export const pgnToFenList = (pgn: string): string[] => {
+export const pgnToFenList = (pgn: string, previousFen?: string | undefined): string[] => {
     const moves = convertPgnToMoveArray(pgn);
-    let fens = [STARTING_POSITION];
+    let fens = [previousFen ? previousFen : STARTING_POSITION];
     for (let i in moves) {
         let move = moves[i].replaceAll("+", "");
-        let isPawn = (moves[i].length < 3 || moves[i].charAt(0).match(/[a-z]{1}/)) || false;
+        let isPawn = (move.length < 3 || move.charAt(0).match(/[a-z]{1}/)) || false;
         let piece = isPawn ? "P" : move.charAt(0);
         let colour = parseInt(i) % 2 == 0 ? "white" : "black";
         let fen = fens[i]
         let fenBoard = fens[i].split(" ");
-
         const x = move.charCodeAt(move.length - 2) - 96;    // 1-8
         const y = parseInt(move.charAt(move.length - 1));   // 1-8 // 0 is back rank
         let board = fenBoard[0].split("/")
         const piece_case = colour === "white" ? piece.toUpperCase() : piece.toLowerCase()
-        console.log("Piece=" + piece + ", move=" + move)
-        console.log("---------------")
+        // console.log("Piece=" + piece + ", move=" + move)
+        // console.log("---------------")
 
         let row_copy = board[board.length - y].split("");
         row_copy[x - 1] = piece_case;
         board[board.length - y] = row_copy.join("");
 
+        console.log("Piece is = " + piece)
         switch (piece) {
             case "P":
                 let isEnPassant = false; //isPawn && moves[i].charAt(0).match(/[a-z]{1}/) || todo
                 if (isEnPassant) {
                     // todo need 2 delete two row squares
+                } else if (move.charAt(2) === "=") {
+                    let row_copy = board[board.length - y].split("");
+                    row_copy[x - 1] = move.charAt(move.length - 1); // Q / N etc...
+                    board[board.length - y] = row_copy.join("");
 
-                } else if (move.includes("x")) {
+                    let copy = board[(colour === "white" ? board.length - y + 1 : board.length - y - 1)].split("");
+                    copy[x - 1] = "1";
+                    board[(colour === "white" ? board.length - y + 1 : board.length - y - 1)] = copy.join("");
+                } else if (move.charAt(1) === "x") {
                     let direction = move.charCodeAt(0) - move.charCodeAt(2);
-                    let copy = board[(colour === "white" ? y + 1 : board.length - y - 1)].split("");
+                    let copy = board[(colour === "white" ? board.length - y + 1 : board.length - y - 1)].split("");
                     copy[x - 1 + direction] = "1";
-                    board[(colour === "white" ? y + 1 : board.length - y - 1)] = copy.join("");
+                    board[(colour === "white" ? board.length - y + 1 : board.length - y - 1)] = copy.join("");
                 } else {
-                    // console.log(board[y + 1])
                     if (board[(colour === "white" ? board.length - y + 1 : board.length - y - 1)][x - 1] === piece_case) {
                         let copy = board[(colour === "white" ? board.length - y + 1 : board.length - y - 1)].split("");
                         copy[x - 1] = "1";
                         board[(colour === "white" ? board.length - y + 1 : board.length - y - 1)] = copy.join("");
-                    } else { // is a 2 jump
+                    } else {
                         let copy = board[(colour === "white" ? board.length - y + 2 : board.length - y - 2)].split("");
                         copy[x - 1] = "1";
                         board[(colour === "white" ? board.length - y + 2 : board.length - y - 2)] = copy.join("");
@@ -150,8 +151,6 @@ export const pgnToFenList = (pgn: string): string[] => {
                             let x_candidate = x - 1 + (i * factor);
                             let y_candidate = board.length - y + (i * factor);
                             if (y_candidate >= 0 && y_candidate <= 7 && board[y_candidate][x - 1] === piece_case) {
-                                console.log("found rook on y")
-                                console.log(board[y_candidate])
                                 let row_copy = board[y_candidate].split("");
                                 row_copy[x - 1] = "1";
                                 board[y_candidate] = row_copy.join("");
@@ -171,7 +170,8 @@ export const pgnToFenList = (pgn: string): string[] => {
                 }
                 break;
             case "Q":
-                for (let row in board) { // todo direct find for Q > 1 
+                // look by iterating around the possible moves -- currently buggy
+                for (let row in board) {
                     let row_copy = board[row].split("")
                     for (let i in row_copy) {
                         if (parseInt(row) !== board.length - y && parseInt(i) !== x && row_copy[i] === piece_case) {
@@ -210,12 +210,9 @@ export const pgnToFenList = (pgn: string): string[] => {
         fenBoard[0] = board.join("/");
         fen = fenBoard.join(" ")
         fens.push(fen)
-
-        if (i === "92") break;
-
     }
+    // console.log(fens)
     return fens;
 }
 
-pgnToFenList(gameMoves)
 
