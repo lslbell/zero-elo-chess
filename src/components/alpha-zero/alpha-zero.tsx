@@ -5,8 +5,9 @@ import React,
 } from "react"
 import { Chessboard } from "react-chessboard";
 import {
+    STARTING_POSITION,
+    convertPgnToMoveArray,
     pgnToFenList,
-    STARTING_POSITION
 } from "../../functions/pgn-to-fen";
 import {
     game1,
@@ -17,73 +18,115 @@ import {
 } from "../../games/games";
 
 export const AlphaZero = () => {
-    const [positionFen, setFenPosition] = useState<string>(STARTING_POSITION);
-    const [userFen, setUserFen] = useState<string>("");
-    const [fens, setFens] = useState<string[]>([]);
-    const [randomNum, setRandomNumber] = useState<number>();
-    const [userStreak, setUserStreak] = useState<number>(0);
-    let games = [game1, game2, game3, game4, game5];
+    const [positionFen, setPositionFen] = useState<string>(STARTING_POSITION);
+    const [userFen, setUserFen] = useState<string>();
+    const [fens, setFens] = useState<string[]>(pgnToFenList(convertPgnToMoveArray(game3)));
+    const [randomNum, setRandomNumber] = useState<number>(0);
+    const [streak, setStreak] = useState<number>(0);
+    const [boardSize, setBoardSize] = useState<number>(600);
 
     useEffect(() => {
-        const fenList = pgnToFenList(games[0]);
-        setFens(fenList);
-        const max = fenList.length - 3;
-        const min = 0;
-        let random_num = Math.floor(Math.random() * (max - min + 1)) + min;
-        if (random_num % 2 !== 0) {
-            random_num += random_num;
+        const width = window.innerWidth;
+        if (width < 600) {
+            setBoardSize(380);
         }
-        setFenPosition(fenList[random_num])
-        setRandomNumber(random_num);
-    }, [userStreak])
+    }, []);
+
+    const handleClickNext = () => {
+        const max = fens.length - 10;
+        let chosenNum = Math.floor(Math.random() * max) + 2;
+        chosenNum = chosenNum % 2 !== 0 ? chosenNum = chosenNum + 1 : chosenNum;
+        setPositionFen(fens[chosenNum])
+        setRandomNumber(chosenNum);
+        return () => { 0 };
+    }
 
     useEffect(() => {
-        if (userFen && randomNum && positionFen) {
-
-            console.log("User fen = " + userFen)
-            console.log("Correct fen = " + fens[randomNum + 1])
-            console.log(randomNum)
-
-            if (userFen && randomNum && userFen === fens[randomNum + 1]) {
-                console.log("correct guess");
-                setUserStreak(userStreak + 1);
-            } else {
-                console.log("Incorrect guess");
+        if (userFen) {
+            let beforeStreak = streak;
+            let streakNew = 0;
+            if (fens) {
+                if (randomNum) {
+                    if (userFen === fens[randomNum + 1]) {
+                        streakNew = beforeStreak + 1;
+                    }
+                }
             }
+            setStreak(streakNew)
+        } else {
+            console.log("Something went wrong...")
+            setPositionFen(STARTING_POSITION)
         }
+        return () => { 0 };
     }, [userFen])
 
     const handlePieceMove = (targetSquare: string, piece: string) => {
-        const move = piece.charAt(1) === "P" ? targetSquare : piece.charAt(1).concat(targetSquare);
-        const newFen = pgnToFenList(move, positionFen)[1]
-        setUserFen(newFen);
+        if (targetSquare) {
+            if (piece) {
+                let move = "";
+                if (piece.charAt(1) === "P") {
+                    move = targetSquare;
+                } else {
+                    move = piece.charAt(1).concat(targetSquare);
+                }
+                const fen = pgnToFenList([move], positionFen)[1]
+                setUserFen(fen);
+                setPositionFen(fen);
+            }
+        }
         return true;
     }
 
     return (
         <div style={{
             justifyContent: "center",
-            alignItems: "center"
+            alignItems: "center",
+            padding: "5px"
         }}>
-            <h3 style={{
-                fontWeight: "normal"
+            <div style={{
+                display: "flex",
+                justifyContent: "center",
+                borderRadius: "5px"
             }}>
-                AlphaZero
-            </h3>
-            <p>
-                {">"} Build your move-picking intuition guessing AlphaZero's moves.
-            </p>
-
-            <Chessboard
-                id="ClickToMove"
-                boardWidth={600}
-                animationDuration={200}
-                position={positionFen}
-                boardOrientation={"white"}
-                onPieceDrop={(sourceSquare, targetSquare, piece) => handlePieceMove(targetSquare, piece)}
-            />
-            <div>
-                <p>Streak: {userStreak}🔥</p>
+                {// jsx ? bad
+                    <Chessboard
+                        boardWidth={boardSize}
+                        position={positionFen}
+                        animationDuration={300}
+                        boardOrientation={"white"}
+                        onPieceDrop={(sourceSquare, targetSquare, piece) => handlePieceMove(targetSquare, piece)}
+                    />
+                    }
+            </div>
+            <div style={{
+                display: "flex",
+                justifyContent: "center",
+                paddingTop: "5px"
+            }}>
+                <button
+                    onClick={handleClickNext}
+                    style={{
+                        width: "100%",
+                        fontSize: "large",
+                        padding: "5px",
+                        border: "1px solid #60F650",
+                        borderRadius: "5px",
+                        color: "#60F650",
+                        backgroundColor: "#1B1C1B",
+                        cursor: "pointer"
+                    }}>
+                    {positionFen !== STARTING_POSITION ? "Next" : "Start"}
+                </button>
+            </div>
+            <div style={{
+                display: "flex",
+                justifyContent: "center"
+            }}>
+                <p style={{
+                    fontSize: `x-large`
+                }}>
+                    {streak}🔥
+                </p>
             </div>
         </div>
     );

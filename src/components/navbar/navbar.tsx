@@ -5,7 +5,7 @@ export const Navbar = () => {
         <nav style={{
             display: "flex",
             justifyContent: "center",
-            borderBottom: "1px solid black",
+            borderBottom: "1px solid #60F650",
             marginBottom: "20px",
         }}>
             <h1 style={{
